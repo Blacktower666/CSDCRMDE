@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from collections import namedtuple
 from itertools import count
 
-from env import Env
+from env_fix import Env
 import config
 import csv
 
@@ -238,12 +238,14 @@ def main():
             action_probs = []
             t_on_n = [0] * env.node_num
             tasks = []
+            dones = []
             while env.task and env.task[0].start_time == env.time:
                 temp += 1
                 curr_task = env.task.pop(0)
                 state = env.get_obs(curr_task)
                 states.append(state)
                 tasks.append(curr_task)
+                dones.append(len(env.task)==0)
                 action, action_prob = agent.select_action(env, curr_task, state)
                 if action ==-1:
                     fail = True
@@ -256,13 +258,13 @@ def main():
                 break
             for n_id in actions:
                 t_on_n[n_id] += 1
-            next_states, rewards, done, download_finish_time = env.step(tasks, actions, t_on_n)
+            next_states, rewards, download_finish_time = env.step(tasks, actions, t_on_n, states)
 
             for i in range(0, temp):
                 cnt += 1
                 reward = rewards[i]
                 ep_reward.append(reward)
-                trans = Transition(states[i], actions[i], reward, action_probs[i], next_states[i], done)
+                trans = Transition(states[i], actions[i], reward, action_probs[i], next_states[i],  dones[i])
                 agent.store_transition(trans)
                 if cnt > 3000:
                     if cnt % 1000 == 0:

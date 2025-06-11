@@ -60,7 +60,7 @@ class Env:
     def __init_env(self):
         self.node_num = config.EDGE_NODE_NUM
         self.image_num = config.IMAGE_NUM
-        self.n_observations = 5 * self.node_num + 2 * self.node_num + 1 + 5 #The length of #state
+        self.n_observations = 7 * self.node_num + 1 + 5 #The length of #state
 
         self.node = []
         self.image = []
@@ -82,8 +82,8 @@ class Env:
         self.done = False # Whether all tasks are completed
 
     def reset(self):
-        random.seed(self.seed)
-        np.random.seed(self.seed)
+        # random.seed(self.seed)
+        # np.random.seed(self.seed)
         self.__init_env()
 
         # 1. create nodes
@@ -169,6 +169,7 @@ class Env:
                 download_finish_time = max(0, self.time)
             # Update the resources occupied by the task and the completion time of the task
             self.node[idx].mem -= task.mem
+            # print('idx',idx)
             task.cpu_freq_using = self.node[idx].cpu_freq / t_on_n[idx] # Average the remaining cpu frequency of the current node according to the number of tasks assigned to the node
             self.node[idx].cpu_freq -= task.cpu_freq_using
             comp_time = task.cpu_freq / task.cpu_freq_using # Calculate the time required for the operation
@@ -271,21 +272,21 @@ class Env:
 
         # task state
         obs["task"] = [task.mem, task.cpu_freq / 3, task.image_id, task.transmission_energy, task.ddl-self.time]
-
         return list(chain(*obs.values()))
 
-    def step(self, tasks, actions, t_on_n):
+    def step(self, tasks, actions, t_on_n, states):
+        observations = []# Observe the status of the assigned task
+        # dones = []
+        for i in range(1, len(states)):
+            observations.append(states[i])
 
         rewards = self._add_task(tasks, actions, t_on_n)# Assign tasks in each time slot to the corresponding node and calculate its reward
-        observations = []# Observe the status of the assigned task
-        for task in tasks:
-            observation = self.get_obs(task)
-            observations.append(observation)
-        if not self.task:
-            done = 1
+        if len(self.task)!=0:
+            observations.append(self.get_obs(self.task[0]))
         else:
-            done = 0
-        return observations, rewards, done, None
+            last_observation = [0] * self.n_observations
+            observations.append(last_observation)
+        return observations, rewards, None
 
 
 if __name__ == '__main__':

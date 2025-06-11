@@ -49,4 +49,6 @@ e2 = 1
 epoch = 400
 
 max_tasks = 20
-min_tasks = 2
+min_tasks = 5
+
+epoch_imitation = 20
